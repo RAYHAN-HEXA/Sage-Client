@@ -1,31 +1,12 @@
-# Digital Life Lessons - Client Side Development TODO
+# Rebranding Task: Replace "Sage" with "DigitalLesson"
 
-## Phase 1: Setup and Dependencies
-- [x] Install additional dependencies (Firebase, Axios, React Toastify, Lottie, Swiper, React Share, etc.)
-- [x] Set up Firebase configuration and environment variables
-- [x] Create folder structure for components, pages, contexts, hooks, utils
-
-## Phase 2: Authentication and Routing
-- [x] Implement authentication context and protected routes
-- [x] Build core components (Navbar, Footer, Loading, etc.)
-- [x] Create all required pages with routing
-
-## Phase 3: Core Features
-- [ ] Implement lesson management (add, edit, delete, view)
-- [ ] Add public lessons with search/filter/sort/pagination
-- [ ] Integrate Stripe for premium upgrades
-
-## Phase 4: Advanced Features
-- [ ] Implement favorites, likes, comments, reports
-- [ ] Add admin dashboard features
-- [ ] Ensure responsiveness and UI consistency
-
-## Phase 5: Optional Features
-- [ ] Add dark/light theme toggle
-- [ ] Social sharing of lessons
-- [ ] Export lessons as PDF
-
-## Phase 6: Testing and Deployment
-- [ ] Test all features thoroughly
-- [ ] Deploy to hosting platform
-- [ ] Ensure reload-safe routes and no CORS issues
+## Files to Edit
+- [x] src/pages/Auth/Login.jsx
+- [x] src/pages/Auth/Register.jsx
+- [x] src/layouts/AuthLayout.jsx
+- [ ] src/components/Shared/Footer.jsx
+- [ ] src/components/Home/TopContributors.jsx
+- [ ] src/components/Home/Hero.jsx
+- [ ] src/components/Shared/Logo.jsx
+- [ ] src/components/Shared/Logo2.jsx
+- [ ] src/pages/Contact.jsx
