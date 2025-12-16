@@ -8,7 +8,7 @@ body {
 
 .custom-scrollbar {
   overflow-y: scroll;
-  height: 300px;
+  height: 100vh;
 }
 
 .custom-scrollbar::-webkit-scrollbar {

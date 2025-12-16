@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router";
-import { FaHeart, FaRegHeart } from "react-icons/fa";
+import { GiCancel } from "react-icons/gi";
+import { FaFlag, FaHeart, FaRegHeart } from "react-icons/fa";
 import { BsFillHandThumbsUpFill, BsHandThumbsUp } from "react-icons/bs";
 import {
   ArrowLeft,
@@ -18,19 +19,20 @@ import useAxios from "../hooks/useAxios";
 import useAuth from "../hooks/useAuth";
 import toast from "react-hot-toast";
 import ShareButton from "../components/Shared/ShareButton";
+import Swal from "sweetalert2";
+import usePremium from "../hooks/usePremium";
+import LessonCard from "../components/Shared/LessonCard";
+import useTheme from "../hooks/useTheme";
+import useAxiosSecure from "../hooks/useAxiosSecure";
 
 const LessonDetails = () => {
   const { id } = useParams();
   const { user } = useAuth();
+  const isPremium = usePremium();
   const axiosInstance = useAxios();
+  const axiosSecure = useAxiosSecure();
 
-  const THEME = {
-    dark: "#1A2F23",
-    primary: "#4F6F52",
-    light: "#F3F5F0",
-    accent: "#D4C5A8",
-    white: "#FFFFFF",
-  };
+  const COLORS = useTheme();
 
   const [lesson, setLesson] = useState(null);
   const [lessons, setLessons] = useState([]);
@@ -42,9 +44,58 @@ const LessonDetails = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteId, setFavoriteId] = useState("");
   const [newComment, setNewComment] = useState("");
+  const [sort, setSort] = useState("");
+  const [tone, setTone] = useState("");
+  const [similarLessonsByCategory, setSimilarLessonsByCategory] = useState();
+  const [similarLessonsByTone, setSimilarLessonsByTone] = useState();
   const [comments, setComments] = useState([]);
+  const reportModalRef = useRef(null);
 
-  useEffect(() => {}, []);
+  const handleModalOpen = () => {
+    if (!user) return toast.error("You must be logged in");
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#1a2f23",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, report it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        reportModalRef.current.showModal();
+      }
+    });
+  };
+  const handleModalClose = () => {
+    reportModalRef.current.close();
+  };
+  const handleReport = (e) => {
+    if (!user) return toast.error("You must be logged in");
+    e.preventDefault();
+    const reportInfo = {
+      postId: id,
+      reportedUserEmail: user.email,
+      reportReason: e.target.reportReason.value,
+      reportDetails: e.target.reportDetails.value,
+      postTitle: lesson.title,
+    };
+    axiosSecure.post("/reports", reportInfo).then((res) => {
+      e.target.reset();
+      reportModalRef.current.close();
+
+      if (res.data.insertedId) {
+        Swal.fire({
+          title: "Reported!",
+          text: "You reported this lesson.",
+          icon: "success",
+          confirmButtonColor: "#1a2f23",
+        });
+      }
+    });
+  };
+
+  //like
   const handleLikeAdd = () => {
     if (!user) return toast.error("You must be logged in");
 
@@ -57,10 +108,12 @@ const LessonDetails = () => {
       posterEmail: lesson.email,
       posterImage: lesson.authorImage,
       postImage: lesson.image,
+      postTitle: lesson.title,
     };
-    axiosInstance.post("/likes", likedInfo).then((res) => {
+    axiosSecure.post("/likes", likedInfo).then((res) => {
       if (res.data.result.insertedId) {
         setIsLiked(true);
+        setLikeId(res.data.result.insertedId);
         axiosInstance.get(`/lessons/${lesson._id}`).then((res) => {
           setLikes(res.data.likes);
           toast.success("Liked!");
@@ -69,16 +122,19 @@ const LessonDetails = () => {
     });
   };
 
+  //remove like
   const handleLikeDelete = () => {
-    axiosInstance.delete(`/likes/${likeId}`).then((res) => {
+    axiosSecure.delete(`/likes/${likeId}`).then((res) => {
       setIsLiked(false);
       axiosInstance.get(`/lessons/${lesson._id}`).then((res) => {
         setLikes(res.data.likes);
+        setLikeId("");
         toast.success("Removed from likes");
       });
     });
   };
 
+  //add to favorites
   const handleFavoriteAdd = () => {
     if (!user) return toast.error("You must be logged in");
 
@@ -91,10 +147,14 @@ const LessonDetails = () => {
       posterEmail: lesson.email,
       posterImage: lesson.authorImage,
       postImage: lesson.image,
+      postTitle: lesson.title,
+      postCategory: lesson.category,
+      postTone: lesson.tone,
     };
-    axiosInstance.post("/favorites", favoriteInfo).then((res) => {
+    axiosSecure.post("/favorites", favoriteInfo).then((res) => {
       if (res.data.result.insertedId) {
         setIsFavorite(true);
+        setFavoriteId(res.data.result.insertedId);
         axiosInstance.get(`/lessons/${lesson._id}`).then((res) => {
           setFavorites(res.data.favorites);
           toast.success("Added to favorites!");
@@ -102,20 +162,27 @@ const LessonDetails = () => {
       }
     });
   };
+
+  //remove from favorites
   const handleFavoriteDelete = () => {
-    axiosInstance.delete(`/favorites/${favoriteId}`).then((res) => {
+    axiosSecure.delete(`/favorites/${favoriteId}`).then(() => {
       setIsFavorite(false);
       axiosInstance.get(`/lessons/${lesson._id}`).then((res) => {
         setFavorites(res.data.favorites);
+        setFavoriteId("");
         toast.success("Removed from favorites");
       });
     });
   };
+
+  //get the lesson details
   useEffect(() => {
     axiosInstance
       .get(`/lessons/${id}`)
       .then((res) => {
         setLesson(res.data);
+        setSort(res.data.category);
+        setTone(res.data.tone);
         setComments(res.data.comments || []);
         setLoading(false);
         setLikes(res.data.likes);
@@ -123,6 +190,7 @@ const LessonDetails = () => {
       })
       .catch(() => setLoading(false));
   }, [axiosInstance, id]);
+
   useEffect(() => {
     if (!user?.email || !lesson?.email) return;
     axiosInstance
@@ -133,6 +201,29 @@ const LessonDetails = () => {
       })
       .catch(() => setLoading(false));
   }, [id, lesson, axiosInstance, user]);
+
+  useEffect(() => {
+    if (!sort) return;
+
+    console.log(sort);
+    axiosInstance
+      .get(`/lessons?category=${encodeURIComponent(sort)}`)
+      .then((res) => {
+        setSimilarLessonsByCategory(res.data.result);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [sort, axiosInstance]);
+  useEffect(() => {
+    if (!tone) return;
+    axiosInstance
+      .get(`/lessons?tone=${tone}`)
+      .then((res) => {
+        setSimilarLessonsByTone(res.data.result);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [tone, axiosInstance]);
 
   useEffect(() => {
     if (!user?.email) return;
@@ -170,9 +261,9 @@ const LessonDetails = () => {
 
   const isLessonPremium =
     lesson?.isPremiumAccess === true || lesson?.isPremiumAccess === "true";
-  const isUserPremium = user?.isPremium === true;
+
   const isAuthor = user?.email === lesson?.email;
-  const isLocked = isLessonPremium && !isUserPremium && !isAuthor;
+  const isLocked = isLessonPremium && !isPremium && !isAuthor;
 
   const isPrivate = lesson?.isPrivate === true || lesson?.isPrivate === "true";
   const lastUpdated = lesson?.updatedAt
@@ -189,14 +280,13 @@ const LessonDetails = () => {
       text: newComment,
     };
 
-    setComments([commentObj, ...comments]);
-    setNewComment("");
-
-    axiosInstance
+    axiosSecure
       .patch(`/lessons/${id}`, commentObj)
       .then((res) => {
         if (res.data.modifiedCount) {
           toast.success("Comment Posted!");
+          setComments([commentObj, ...comments]);
+          setNewComment("");
         }
       })
       .catch((err) => {
@@ -207,13 +297,13 @@ const LessonDetails = () => {
   return (
     <div
       className="min-h-screen w-full py-20 relative  selection:bg-[#D4C5A8] selection:text-[#1A2F23]"
-      style={{ backgroundColor: THEME.light }}
+      style={{ backgroundColor: COLORS.light }}
     >
       {/* BACKGROUND TEXTURE */}
       <div className="absolute inset-0 z-0 opacity-40 bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] pointer-events-none"></div>
 
       {/* NAVIGATION */}
-      <nav className="relative z-20 max-w-7xl mx-auto px-4 py-6 flex items-center justify-between">
+      <nav className="relative z-20 max-w-[1440px] mx-auto px-4 py-6 flex items-center justify-between">
         <Link
           to="/public-lessons"
           className="flex items-center gap-2 text-gray-500 hover:text-[#1A2F23] transition-colors group"
@@ -225,9 +315,9 @@ const LessonDetails = () => {
         </Link>
       </nav>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-12">
+      <main className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-12">
         {/* LEFT SECTION */}
-        <article className="animate-fade-in-up">
+        <article className="animate-fade-in-up custom-scrollbar h-screen">
           {/* HEADER */}
           <div className="mb-8 space-y-4">
             <div className="flex items-center gap-4 flex-wrap text-sm font-bold tracking-wider uppercase">
@@ -245,7 +335,7 @@ const LessonDetails = () => {
             </div>
 
             {/* TITLE */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl  font-bold text-[#1A2F23] leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl  line-clamp-1 font-bold text-[#1A2F23] leading-tight">
               {lesson.title}
             </h1>
 
@@ -266,7 +356,7 @@ const LessonDetails = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 lg:mr-4">
                 {/* Likes */}
 
                 {isLiked ? (
@@ -323,6 +413,83 @@ const LessonDetails = () => {
                 <div className="flex flex-col items-center">
                   <ShareButton />
                 </div>
+                <button
+                  onClick={handleModalOpen}
+                  className="flex cursor-pointer items-center gap-2 bg-white/10 hover:bg-red-500/30 transition-colors rounded-full px-3 py-1 shadow-inner"
+                >
+                  <FaFlag size={20} className="text-red-700" />
+                </button>
+                {/* Open the modal using document.getElementById('ID').showModal() method */}
+
+                <dialog
+                  ref={reportModalRef}
+                  className="modal modal-bottom sm:modal-middle"
+                >
+                  <div className="modal-box">
+                    <div className="modal-action">
+                      <div method="dialog">
+                        <button
+                          className="cursor-pointer"
+                          onClick={handleModalClose}
+                        >
+                          <GiCancel size={24} color="gray" />
+                        </button>
+                      </div>
+                    </div>
+                    {/* REPORT FORM */}
+                    <form
+                      onSubmit={(e) => handleReport(e)}
+                      className="space-y-4"
+                    >
+                      {/* Reason Dropdown */}
+                      <div>
+                        <label className="font-semibold block mb-1">
+                          Reason
+                        </label>
+                        <select
+                          name="reportReason"
+                          className="w-full border border-gray-300 rounded-lg p-2"
+                        >
+                          <option value="">Select a reason</option>
+                          <option value="Inappropriate Content">
+                            Inappropriate Content
+                          </option>
+                          <option value="Hate Speech or Harassment">
+                            Hate Speech or Harassment
+                          </option>
+                          <option value="Misleading or False Information">
+                            Misleading or False Information
+                          </option>
+                          <option value="Spam or Promotional Content">
+                            Spam or Promotional Content
+                          </option>
+                          <option value="Sensitive or Disturbing Content">
+                            Sensitive or Disturbing Content
+                          </option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+
+                      {/* Additional Details */}
+                      <div>
+                        <label className="font-semibold block mb-1">
+                          Additional Details (optional)
+                        </label>
+                        <textarea
+                          name="reportDetails"
+                          placeholder="Write more details here..."
+                          className="w-full border border-gray-300 rounded-lg p-2"
+                          rows="4"
+                        ></textarea>
+                      </div>
+                      <div>
+                        <button className="bg-[#1a2f23] text-white px-4 rounded-lg py-2">
+                          Submit Report
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </dialog>
               </div>
             </div>
           </div>
@@ -379,9 +546,49 @@ const LessonDetails = () => {
                   <p className="text-gray-500 mb-6">
                     Unlock this premium wisdom by upgrading your membership.
                   </p>
-                  <button className="w-full py-3 bg-[#D4C5A8] hover:bg-[#c3b290] text-[#1A2F23] font-bold rounded-xl transition-colors shadow-md">
-                    Upgrade Membership
-                  </button>
+                  <Link to="/payment">
+                    <button className="w-full cursor-pointer py-3 bg-[#D4C5A8] hover:bg-[#c3b290] text-[#1A2F23] font-bold rounded-xl transition-colors shadow-md">
+                      Upgrade Membership
+                    </button>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+          <div>
+            {/* SIMILAR LESSONS BY CATEGORY */}
+            {similarLessonsByCategory &&
+              similarLessonsByCategory.length > 0 && (
+                <div className="mt-16">
+                  <h2 className="text-3xl font-bold text-[#1A2F23] mb-6">
+                    More From This Category
+                  </h2>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-8">
+                    {similarLessonsByCategory
+                      .filter((l) => l._id !== lesson._id)
+                      .slice(0, 6)
+                      .map((item) => (
+                        <LessonCard lesson={item} isPremium={isPremium} />
+                      ))}
+                  </div>
+                </div>
+              )}
+
+            {/* SIMILAR LESSONS BY TONE */}
+            {similarLessonsByTone && similarLessonsByTone.length > 0 && (
+              <div className="mt-20">
+                <h2 className="text-3xl font-bold text-[#1A2F23] mb-6">
+                  More With This Tone
+                </h2>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-8">
+                  {similarLessonsByTone
+                    .filter((l) => l._id !== lesson._id)
+                    .slice(0, 6)
+                    .map((lesson) => (
+                      <LessonCard lesson={lesson} isPremium={isPremium} />
+                    ))}
                 </div>
               </div>
             )}
@@ -389,7 +596,7 @@ const LessonDetails = () => {
         </article>
 
         {/* SIDEBAR */}
-        <aside className="hidden lg:block space-y-8">
+        <aside className="block space-y-8">
           {/* AUTHOR CARD */}
           <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100">
             <div className="flex flex-col items-center text-center">
@@ -448,38 +655,45 @@ const LessonDetails = () => {
                 No comments yet. Be the first to share your thoughts!
               </p>
             ) : (
-              comments.slice(0, 5).map((c, index) => (
-                <div
-                  key={index}
-                  className="bg-white/10 p-4 rounded-xl flex gap-3 items-start"
-                >
-                  {/* COMMENTER IMAGE */}
-                  <img
-                    src={
-                      c.commenterImage || "https://i.ibb.co/4pDNDk1/avatar.png"
-                    }
-                    alt={c.commenter}
-                    className="w-10 h-10 rounded-full object-cover border border-white/30"
-                  />
+              [...comments]
+                .sort(
+                  (a, b) =>
+                    new Date(b.commentedAt || 0) - new Date(a.commentedAt || 0)
+                )
+                .slice(0, 5)
+                .map((c, index) => (
+                  <div
+                    key={index}
+                    className="bg-white/10 p-4 rounded-xl flex gap-3 items-start"
+                  >
+                    {/* COMMENTER IMAGE */}
+                    <img
+                      src={
+                        c.commenterImage ||
+                        "https://i.ibb.co/4pDNDk1/avatar.png"
+                      }
+                      alt={c.commenter}
+                      className="w-10 h-10 rounded-full object-cover border border-white/30"
+                    />
 
-                  <div className="flex-1">
-                    {/* NAME */}
-                    <p className="text-sm font-bold text-white">
-                      {c.commenter}
-                    </p>
+                    <div className="flex-1">
+                      {/* NAME */}
+                      <p className="text-sm font-bold text-white">
+                        {c.commenter}
+                      </p>
 
-                    {/* TEXT */}
-                    <p className="text-sm text-white/80 mt-1">{c.text}</p>
+                      {/* TEXT */}
+                      <p className="text-sm text-white/80 mt-1">{c.text}</p>
 
-                    {/* DATE */}
-                    <p className="text-xs text-white/50 mt-1">
-                      {c.commentedAt
-                        ? new Date(c.commentedAt).toLocaleString()
-                        : "Just now"}
-                    </p>
+                      {/* DATE */}
+                      <p className="text-xs text-white/50 mt-1">
+                        {c.commentedAt
+                          ? new Date(c.commentedAt).toLocaleString()
+                          : "Just now"}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))
+                ))
             )}
           </div>
         </aside>

@@ -1,29 +1,33 @@
 import React from "react";
-import { Clock, ExternalLink, Lock, Sparkles, User, Crown } from "lucide-react";
 import { Link } from "react-router";
+import {
+  Clock,
+  ExternalLink,
+  Lock,
+  Sparkles,
+  User,
+  Crown,
+  Gem,
+} from "lucide-react";
+import useTheme from "../../hooks/useTheme";
+import usePremium from "../../hooks/usePremium";
 
-const COLORS = {
-  darkGreen: "#1A2F23",
-  sage: "#4F6F52",
-  mist: "#F3F5F0",
-  gold: "#D4C5A8",
-  white: "#FFFFFF",
-};
+const LessonCard = ({ lesson, isPremium }) => {
+  const { COLORS } = useTheme();
 
-const LessonCard = ({ lesson, user }) => {
   const isLessonPremium =
     lesson?.isPremium === true ||
     lesson?.isPremium === "true" ||
     lesson?.isPremiumAccess === true ||
     lesson?.isPremiumAccess === "true";
 
-  const isUserPremium = user?.isPremium === true;
+  const isUserPremium = isPremium === true;
 
-  const isLocked = isLessonPremium && !isUserPremium;
+  const isLocked = isLessonPremium && isUserPremium === false;
 
   return (
     <div
-      className={`relative w-full max-w-md mx-auto bg-white rounded-[2rem] overflow-hidden border transition-all duration-300 h-[500px] lg:h-[420px] group ${
+      className={`relative w-full max-w-md mx-auto bg-white rounded-[2rem] overflow-hidden border transition-all duration-300 h-[500px] lg:h-[450px] group ${
         isLocked
           ? "border-gray-200"
           : `border-gray-100 hover:shadow-2xl hover:-translate-y-1`
@@ -34,11 +38,11 @@ const LessonCard = ({ lesson, user }) => {
           : "0 25px 50px -12px rgba(26, 47, 35, 0.1)",
       }}
     >
-      {/* PREMIUM LOCK SCREEN*/}
+      {/* PREMIUM LOCK SCREEN */}
       {isLocked && (
         <div
           className="absolute inset-0 z-20 flex flex-col items-center justify-center p-8 text-center backdrop-blur-md"
-          style={{ backgroundColor: `${COLORS.darkGreen}CC` }}
+          style={{ backgroundColor: `${COLORS.dark}CC` }}
         >
           <div
             className="p-4 rounded-full mb-4 shadow-lg"
@@ -55,16 +59,18 @@ const LessonCard = ({ lesson, user }) => {
             This lesson is exclusive for premium members. Upgrade to unlock.
           </p>
 
-          <button
-            className="px-6 py-3 rounded-xl text-sm font-bold uppercase shadow-lg"
-            style={{ backgroundColor: COLORS.gold, color: COLORS.darkGreen }}
-          >
-            Upgrade to View
-          </button>
+          <Link to="/payment">
+            <button
+              className="px-6 cursor-pointer py-3 rounded-xl text-sm font-bold uppercase shadow-lg"
+              style={{ backgroundColor: COLORS.gold, color: COLORS.dark }}
+            >
+              Upgrade to View
+            </button>
+          </Link>
         </div>
       )}
 
-      {/* MAIN CONTENT*/}
+      {/* MAIN CONTENT */}
       <div
         className={`p-6 md:p-8 h-full flex flex-col ${
           isLocked
@@ -84,10 +90,10 @@ const LessonCard = ({ lesson, user }) => {
           </div>
 
           {/* Access Badge */}
-          {lesson.isPremium ? (
+          {isLessonPremium ? (
             <span
               className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-lg"
-              style={{ color: COLORS.darkGreen, backgroundColor: COLORS.gold }}
+              style={{ color: COLORS.dark, backgroundColor: COLORS.gold }}
             >
               <Crown size={12} /> Premium
             </span>
@@ -102,10 +108,19 @@ const LessonCard = ({ lesson, user }) => {
         <div className="mb-6 flex-grow">
           <h2
             className="text-2xl font-serif font-bold leading-tight mb-3 line-clamp-2"
-            style={{ color: COLORS.darkGreen }}
+            style={{ color: COLORS.dark }}
           >
             {lesson.title}
           </h2>
+
+          {lesson.isPremiumAccess === "true" && (
+            <div className="flex items-center mb-3 w-24 gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-br from-[#D4C5A8] via-[#FDFBF7] to-[#C3B08D] border border-white/40">
+              <Gem size={12} className="text-[#1A2F23]" />
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1A2F23]">
+                Premium
+              </span>
+            </div>
+          )}
 
           <p className="text-gray-600 leading-relaxed line-clamp-3">
             {lesson.description}
@@ -143,10 +158,7 @@ const LessonCard = ({ lesson, user }) => {
               <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">
                 Posted By
               </p>
-              <p
-                className="text-sm font-bold"
-                style={{ color: COLORS.darkGreen }}
-              >
+              <p className="text-sm font-bold" style={{ color: COLORS.dark }}>
                 {lesson.name}
               </p>
               <span className="text-gray-400 text-xs flex items-center gap-1">
@@ -158,7 +170,7 @@ const LessonCard = ({ lesson, user }) => {
           <Link
             to={`/lesson-details/${lesson._id}`}
             className="flex items-center justify-center cursor-pointer gap-2 px-4 py-3 mt-3 xl:mt-0 rounded-xl font-medium transition-all hover:gap-3 hover:shadow-md active:scale-95"
-            style={{ backgroundColor: COLORS.mist, color: COLORS.darkGreen }}
+            style={{ backgroundColor: COLORS.mist, color: COLORS.dark }}
           >
             <span>See Details</span>
             <ExternalLink size={18} style={{ color: COLORS.sage }} />

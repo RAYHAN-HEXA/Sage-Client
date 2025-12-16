@@ -16,21 +16,19 @@ import { Link } from "react-router";
 import axios from "axios";
 import useAuth from "../../hooks/useAuth";
 import Lottie from "lottie-react";
+import useTheme from "../../hooks/useTheme";
+import { FaLock } from "react-icons/fa";
+import { GiWorld } from "react-icons/gi";
+import useAxiosSecure from "../../hooks/useAxiosSecure";
 
 const AddLessons = () => {
-  const axiosInstance = useAxios();
+  const axiosSecure = useAxiosSecure();
   const isPremium = usePremium();
   const { user } = useAuth();
 
   const { register, handleSubmit, setValue, watch, reset } = useForm();
 
-  const THEME = {
-    dark: "#1A2F23",
-    primary: "#4F6F52",
-    light: "#F3F5F0",
-    accent: "#D4C5A8",
-    white: "#FFFFFF",
-  };
+  const { COLORS } = useTheme();
 
   const categories = [
     "Personal Growth",
@@ -86,7 +84,7 @@ const AddLessons = () => {
 
   const onSubmit = async (data) => {
     try {
-      await axiosInstance.post("/lessons", {
+      await axiosSecure.post("/lessons", {
         title: data.title,
         description: data.description,
         category: data.category,
@@ -114,15 +112,15 @@ const AddLessons = () => {
   };
 
   return (
-    <div className="min-h-screen w-full relative flex flex-col items-center justify-center py-26 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <div className="min-h-screen w-full relative flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 overflow-hidden">
       {/* --- BACKGROUND --- */}
       <div
         className="absolute inset-0 z-0"
         style={{
-          backgroundColor: THEME.light,
+          backgroundColor: COLORS.light,
           backgroundImage: `
-            radial-gradient(circle at 10% 20%, ${THEME.accent}30 0%, transparent 20%),
-            radial-gradient(circle at 90% 80%, ${THEME.primary}20 0%, transparent 25%)
+            radial-gradient(circle at 10% 20%, ${COLORS.accent}30 0%, transparent 20%),
+            radial-gradient(circle at 90% 80%, ${COLORS.primary}20 0%, transparent 25%)
           `,
         }}
       />
@@ -366,7 +364,7 @@ const AddLessons = () => {
                 </div>
 
                 {/* Visibility */}
-                <div>
+                {/* <div>
                   <label className="block text-xs font-bold text-[#4F6F52] uppercase mb-3 ml-1">
                     Visibility
                   </label>
@@ -380,29 +378,54 @@ const AddLessons = () => {
                       Private — Only you can see{" "}
                     </span>
                   </label>
+                </div> */}
+                {/* Visibility */}
+                <div>
+                  <label className="block text-xs font-bold text-[#4F6F52] uppercase mb-3 ml-1">
+                    Visibility
+                  </label>
+
+                  <select
+                    {...register("visibility")}
+                    defaultValue="public"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setValue("isPrivate", value === "private");
+                    }}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 focus:border-[#4F6F52] outline-none cursor-pointer"
+                  >
+                    <option value="public">Public — Visible to everyone</option>
+                    <option value="private">Private — Only you can see</option>
+                  </select>
                 </div>
+
                 {/* Access Level */}
                 <div>
                   <label className="block text-xs font-bold text-[#4F6F52] uppercase mb-3 ml-1">
                     Access Level
                   </label>
-                  <label className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      {...register("isPremiumAccess")}
-                      className="w-5 h-5 accent-[#4F6F52]"
-                      disabled={!isPremium}
-                    />
 
-                    <span className="text-sm text-gray-700">
-                      Premium Content{" "}
-                      {!isPremium && (
-                        <Link className="underline text-blue-500">
-                          (Be a Premium Member to access this)
-                        </Link>
-                      )}
-                    </span>
-                  </label>
+                  <select
+                    {...register("accessLevel")}
+                    defaultValue={isPremium ? "premium" : "free"}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setValue("isPremiumAccess", value === "premium");
+                    }}
+                    className={`w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 focus:border-[#4F6F52] outline-none cursor-pointer`}
+                    disabled={!isPremium}
+                  >
+                    <option value="free">Free — Visible to all users</option>
+                    <option value="premium">Premium — Members only</option>
+                  </select>
+
+                  {!isPremium && (
+                    <p className="mt-1 text-xs text-blue-500">
+                      <Link to="/payment" className="underline">
+                        Become a Premium Member to access this
+                      </Link>
+                    </p>
+                  )}
                 </div>
 
                 {/* Submit */}

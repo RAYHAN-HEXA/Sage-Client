@@ -150,7 +150,6 @@ const Login = () => {
           </Link>
         </div>
 
-        {/* Bottom Meta (Mimicking the image small text) */}
         <div className="pt-12 border-t border-gray-200 mt-8">
           <div className="flex justify-between items-center text-[10px] text-gray-400 font-mono">
             <span>App ID: sage_x8ds_irn</span>
