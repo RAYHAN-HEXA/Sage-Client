@@ -39,7 +39,7 @@ const Register = () => {
         axios
           .post(
             `https://api.imgbb.com/1/upload?key=${
-              import.meta.env.VITE_IMAGE_HOST_KEY
+              import.meta.env.VITE_API_KEY
             }`,
             formData
           )
