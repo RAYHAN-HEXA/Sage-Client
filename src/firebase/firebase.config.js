@@ -6,13 +6,14 @@ import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyA6-oel1ZrfrmZpZ9CRuh7AgZXy_zI7AH4",
-  authDomain: "digital-life-lessons-c707c.firebaseapp.com",
-  projectId: "digital-life-lessons-c707c",
-  storageBucket: "digital-life-lessons-c707c.firebasestorage.app",
-  messagingSenderId: "878692482776",
-  appId: "1:878692482776:web:56618868fafe845665e1ad"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
+
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

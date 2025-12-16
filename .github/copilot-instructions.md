@@ -50,7 +50,7 @@ FirebaseAuth → AuthProvider(user, loading) → PrivateRoute/AdminRoute
 
 ### API Integration
 - **useAxiosSecure** ([src/hooks/useAxiosSecure.jsx](src/hooks/useAxiosSecure.jsx)): 
-  - Pre-configured axios instance with baseURL `http://localhost:5000`
+  - Pre-configured axios instance with baseURL `https://lesson-vault-server.vercel.app`
   - **Request interceptor:** Adds `Authorization: Bearer {accessToken}` header
   - **Response interceptor:** Catches 401/403 errors, logs out user, redirects to login
   - **Use this for all authenticated API calls** - not plain axios
@@ -87,7 +87,7 @@ npm run lint      # ESLint check (config: eslint.config.js)
 ```
 
 ### Backend Dependency
-- **API runs on `http://localhost:5000`** (hardcoded in useAxiosSecure)
+- **API runs on `https://lesson-vault-server.vercel.app`** (hardcoded in useAxiosSecure)
 - Backend must be running for authenticated features to work
 - Frontend handles token refresh via axios interceptors
 
