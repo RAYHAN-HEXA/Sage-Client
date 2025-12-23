@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import useAxios from "./useAxios";
+import useAxiosSecure from "./useAxiosSecure";
 import useAuth from "./useAuth";
 
 const useRole = () => {
-  const axiosInstance = useAxios();
+  const axiosInstance = useAxiosSecure();
   const { user } = useAuth();
   const [role, setRole] = useState("");
 
